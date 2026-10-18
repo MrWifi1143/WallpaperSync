@@ -1,40 +1,47 @@
-# WallpaperSync: Dynamic LED Color Synchronization
+# WallpaperSync (Linux / live wallpaper fork)
 
-**WallpaperSync** is a Python script that dynamically adjusts the color of connected RGB LED devices based on your desktop wallpaper using [OpenRGB](https://openrgb.org/). The script continuously monitors the system wallpaper for changes and updates the LED colors to match the most prominent color in the wallpaper. This ensures a visually cohesive environment that aligns with your desktop's aesthetics.
+Sets your RGB lighting through [OpenRGB](https://openrgb.org/) to match your desktop wallpaper, including live wallpapers.
 
-[Here is a demo on how it works](https://www.reddit.com/r/pcmasterrace/comments/1edjz55/made_this_script_that_changes_rgb_color_depending/)
-## Features
+Based on [Zephyr73/WallpaperSync](https://github.com/Zephyr73/WallpaperSync). This fork runs on Linux (Wayland) instead of Windows.
 
-- Real-time Monitoring: Automatically detects changes to the wallpaper and updates LED colors accordingly.
-- Easy to configure and use.
+## Wallpaper sources
 
-## Requirements
+It checks every `poll_seconds` and uses the first source it finds:
 
-To run WallpaperSync, you'll need to install the following Python libraries:
+1. **linux-wallpaperengine**: reads the running process's `--bg` (workshop id or path).
+   - *video* wallpapers: ffmpeg samples `sample_frames` frames spread across the video.
+   - *scene* / *web* wallpapers: the item's preview image is used.
+2. **awww / swww**: the image from `awww query`. An animated GIF is sampled across its frames.
+3. `~/.cache/current_wallpaper`, as written by `set-wallpaper.sh`.
 
-- [colorthief](https://github.com/fengsp/color-thief-py): For extracting color palette
-- [openrgb-python](https://github.com/jath03/openrgb-python): For changing RGB colors in hardware
-- [watchdog](https://github.com/gorakhargosh/watchdog): For monitoring file system changes.
-- `colorsys`, `math`, `time`, `shutil`, and `os`: Standard Python libraries used in the script.
+## Config (`config.json`)
 
-Clone this repository:
-```bash
-   git clone https://github.com/Zephyr73/WallpaperSync.git
-```
-# Usage
+| key | default | meaning |
+|---|---|---|
+| `ip`, `port` | `127.0.0.1`, `6742` | OpenRGB SDK server |
+| `mode` | `static` | `static`: one colour per wallpaper. `animate`: slowly cycles through the colours of the sampled frames |
+| `sample_frames` | `12` | frames sampled from a video or GIF |
+| `fade_seconds` | `1.0` | length of the fade to a new colour |
+| `cycle_seconds` | `6.0` | animate mode: how long each colour is held |
+| `poll_seconds` | `2.0` | how often to check for a wallpaper change |
+| `brightness` | `1.0` | 0 to 1, scales the LED colour |
 
-1. Ensure you have RGB LED devices connected and the OpenRGB server running on localhost port `6742`.
-   - You can also configure the `default ip` and `port` if the script doesnt detect OpenRGB SDK using default values. The config will be saved in a `config.json` file
-2. Run the script
+## Running
+
 ```sh
-run.bat
+./run.sh                 # foreground; creates .venv on first run
+./run.sh --once          # set the colour once and exit
+./run.sh --mode animate
 ```
-3. The script will create a venv folder which will include all the required libraries from `requirements.txt`. It will then start monitoring for wallpaper changes and updating LED colors.
 
-   - If for some reason, the dependencies are not properly installed, use this `pip` command:
-     
-     ```bash
-     pip install -r requirements.txt
-     ```
-## Contributing
-Feel free to contribute by submitting issues, suggestions, or pull requests.
+To start it at login with systemd user services:
+
+```sh
+cp systemd/*.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now openrgb-server.service wallpapersync.service
+journalctl --user -u wallpapersync -f
+```
+
+`wallpapersync.service` expects the repo at `~/src/WallpaperSync`. Change `ExecStart` if you keep it somewhere else.
+Requires `ffmpeg` (for video wallpapers) and `openrgb`.

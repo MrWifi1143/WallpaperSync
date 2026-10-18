@@ -1,0 +1,12 @@
+[Unit]
+Description=Sync OpenRGB lighting with the current wallpaper
+Wants=openrgb-server.service
+After=openrgb-server.service
+
+[Service]
+ExecStart=%h/src/WallpaperSync/.venv/bin/python -u %h/src/WallpaperSync/sync.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

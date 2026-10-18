@@ -1,4 +1,10 @@
 {
-    "ip": "localhost",
-    "port": 6741
+    "ip": "127.0.0.1",
+    "port": 6742,
+    "mode": "animate",
+    "sample_frames": 12,
+    "fade_seconds": 1.0,
+    "cycle_seconds": 6.0,
+    "poll_seconds": 2.0,
+    "brightness": 1.0
 }
